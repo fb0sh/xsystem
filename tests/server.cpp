@@ -1,7 +1,8 @@
 #include "../xsystem.hpp"
 using xsystem::net::Socket;
 #include <iostream>
-using std::cin,std::cout;
+using std::cout;
+using std::endl;
 
 int main(){
   Socket::Init();

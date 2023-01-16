@@ -1,0 +1,26 @@
+# ninja log v5
+5	736	6955732313403609	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+11	330	6955732522054972	testhttp.exe	6fec3ced05e4242e
+6	348	6955732687295979	CMakeFiles/client.dir/tests/client.cpp.obj	5a90c79b7f4a6248
+349	609	6955732689645983	client.exe	79fde9c3629ae3cf
+1	7	0	clean	a0c72c67954f17e6
+3	371	6955733976926238	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+371	518	6955733978026240	testhttp.exe	6fec3ced05e4242e
+8	400	6955737298286313	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+400	550	6955737299376318	testhttp.exe	6fec3ced05e4242e
+9	394	6955738065931271	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+395	546	6955738067041193	testhttp.exe	6fec3ced05e4242e
+9	409	6955740636954362	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+409	560	6955740638064407	testhttp.exe	6fec3ced05e4242e
+8	405	6955740689077498	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+405	538	6955740690067486	testhttp.exe	6fec3ced05e4242e
+11	421	6955740737904931	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+421	561	6955740738916868	testhttp.exe	6fec3ced05e4242e
+8	649	6955749209186067	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+649	854	6955749210776003	testhttp.exe	6fec3ced05e4242e
+9	725	6955773241822561	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+725	911	6955773243172477	testhttp.exe	6fec3ced05e4242e
+9	550	6955774114007499	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+551	701	6955774115077499	testhttp.exe	6fec3ced05e4242e
+9	813	6955799317347189	CMakeFiles/testhttp.dir/tests/testhttp.cpp.obj	a093f47f7c7d7622
+813	1043	6955799319126392	testhttp.exe	6fec3ced05e4242e
