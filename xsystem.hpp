@@ -210,6 +210,7 @@ namespace xsystem {
 				string body;
 				unsigned int port = 80;
 				map<string, string> headers = {
+					{"Connection","close"},
 					{"User-Agent", "Mozilla / 5.0 (Windows NT 10.0; Win64; x64) AppleWebKit / 537.36 (KHTML, like Gecko) Chrome / 53.0.2785.143 Safari / 537.36"},
 					{"Accept","*/*"},
 					{"Accept-Language","zh-CN,zh;q = 0.8;*"}
