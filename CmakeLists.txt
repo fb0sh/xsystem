@@ -4,5 +4,7 @@ cmake_minimum_required(VERSION 3.15)
 project(Test)
 
 # add the executable
-add_executable(client "tests/client.cpp" "xsystem.hpp")
-add_executable(testhttp "tests/testhttp.cpp" "xsystem.hpp")
+add_executable(client "tests/client.cpp" "xsystem.hpp" )
+add_executable(server "tests/server.cpp" "xsystem.hpp" )
+add_executable(testhttp "tests/testhttp.cpp" "xsystem.hpp" )
+add_executable(testhttpserver "tests/testhttpserver.cpp" "xsystem.hpp" )

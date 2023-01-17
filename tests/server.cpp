@@ -8,7 +8,7 @@ int main(){
   Socket::Init();
   
   Socket s(AF_INET, SOCK_STREAM, 0);
-  s.Bind("192.168.0.14", 3147);
+  s.Bind("192.168.0.103", 80);
   s.Listen(5);
   
   auto c = s.Accept();

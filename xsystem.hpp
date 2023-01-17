@@ -6,6 +6,7 @@
 #if _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <Winsock2.h>
 #pragma comment (lib, "ws2_32.lib") 
 
@@ -30,6 +31,9 @@ using std::endl;
 #include <map>
 using std::map;
 using std::pair;
+
+#include <memory>
+using std::shared_ptr;
 
 namespace xsystem {
 
@@ -85,6 +89,7 @@ namespace xsystem {
 			}
 
 			int Bind(string host, unsigned int port) {
+				// try catch exception
 				this->address.host = host;
 				this->address.port = port;
 
@@ -113,12 +118,12 @@ namespace xsystem {
 				return listen(this->fd, backlog);
 			}
 
-			int Send(const char *buf, int len, int flags) {
-				return send(this->fd, buf, len, flags);
+			int Send(const char *buf, size_t len, int flags) {
+				return send(this->fd, buf, (int)len, flags);
 			}
 
-			int Recv(char *buf, int len, int flags) {
-				return recv(this->fd, buf, len, flags);
+			int Recv(char *buf, size_t len,  int flags) {
+				return recv(this->fd, buf, (int)len, flags);
 			}
 
 			Socket Accept() {
@@ -159,7 +164,9 @@ namespace xsystem {
 				this->address.addr.sin_family = protofamily;
 			}
 
-			Socket() {}
+			Socket() {
+				this->fd = -1;
+			}
 
 			~Socket() {}
 		};
@@ -179,7 +186,8 @@ namespace xsystem {
 
 			enum HTTP_METHOD {
 				GET,
-				POST
+				POST,
+				CONNECT
 			};
 
 			class Response {
@@ -192,9 +200,15 @@ namespace xsystem {
 				map<string, string> headers;
 
 			public:
-				Response() {}
+				Response() {
+					this->data = (char *)malloc(sizeof(char) * 1024);
+					if(this->data!=0) memset(this->data, '\0', 1024);
+				}
 
-				Response(string url): url(url) {}
+				Response(string url): url(url) {
+					this->data = (char *)malloc(sizeof(char) * 1024);
+					if(this->data != 0) memset(this->data, '\0', 1024);
+				}
 
 				~Response() {
 					free(this->data);
@@ -210,22 +224,21 @@ namespace xsystem {
 				string body;
 				unsigned int port = 80;
 				map<string, string> headers = {
-					{"Connection","close"},
-					{"User-Agent", "Mozilla / 5.0 (Windows NT 10.0; Win64; x64) AppleWebKit / 537.36 (KHTML, like Gecko) Chrome / 53.0.2785.143 Safari / 537.36"},
 					{"Accept","*/*"},
-					{"Accept-Language","zh-CN,zh;q = 0.8;*"}
+					{"Connection","close"},
+					{"User-Agent", "xsystem-request/0"}
 				};
 
 			public:
-				Response Get(string path = "/") {// /getip/id=3
+				shared_ptr<Response> Get(string path = "/") {// /getip/id=3
 					return this->FuckHandleHttpRequest(GET, path);
 				}
-				Response Post(string path = "/") {
+				shared_ptr<Response> Post(string path = "/") {
 					return this->FuckHandleHttpRequest(POST, path);
 				}
 			private:
-				Response FuckHandleHttpRequest(HTTP_METHOD method, string path) {
-					Response response(this->base + path);
+				shared_ptr<Response> FuckHandleHttpRequest(HTTP_METHOD method, string path) {
+					shared_ptr<Response> response(new Response(this->base + path));
 					// http packet construction
 					string http_packet;
 					if(method == GET) {
@@ -235,6 +248,7 @@ namespace xsystem {
 					}
 
 					http_packet += path + " " + HTTP_VERSION + HTTP_DELIM;
+					http_packet += "Host: " + this->ip + HTTP_DELIM;
 					for(pair<string, string> item : this->headers) {
 						http_packet += item.first + ": " + item.second + HTTP_DELIM;
 					}
@@ -244,14 +258,15 @@ namespace xsystem {
 
 					Socket client(AF_INET, SOCK_STREAM, 0);
 					client.Connect(this->ip, this->port);
+					client.Send(http_packet.c_str(), http_packet.length(), 0);
 
 					// first line
 					char c;
 					while(client.Recv(&c, 1, 0) && c != ' ');// HTTP/1.1
-					while(client.Recv(&c, 1, 0) && c != ' ') response.status_code += c;
-					while(client.Recv(&c, 1, 0) && c != '\r') response.status += c;
+					while(client.Recv(&c, 1, 0) && c != ' ') response->status_code += c;
+					while(client.Recv(&c, 1, 0) && c != '\r') response->status += c;
 					// others
-					int flag = 1;
+					int flag = 1; // 
 					while(flag) {
 						string first, second;
 						while(int len = client.Recv(&c, 1, 0)) {
@@ -261,7 +276,7 @@ namespace xsystem {
 									client.Recv(&c, 1, 0);
 									if(c == '\n') {
 										flag = 0;
-										break;
+										goto HTTP_CONTENT;
 									}
 								}
 							}// check if down to body
@@ -270,23 +285,35 @@ namespace xsystem {
 							} else break;
 						}
 
+						client.Recv(&c, 1, 0);// Space
 						while(client.Recv(&c, 1, 0) && c != '\r') {
 							second += c;
 						}
 
-						response.headers.insert(pair<string, string>(first, second));
+						response->headers.insert(pair<string, string>(first, second));
 					}
 
-					if(response.headers.count("Content-Length")) {
-						long long int size = stoll(response.headers["Content-Length"]);
-						response.data = new char(size);
-						memset(response.data, '\0', size);
+HTTP_CONTENT:
+
+					if(response->headers.count("Content-Length")) {
+						size_t size = stoll(response->headers["Content-Length"]);
+						if(size > 1024) {
+							free(response->data);
+							response->data = (char *)malloc(sizeof(char) * size);
+							memset(response->data, '\0', size);
+						}
 					}
 
 					char buffer[1024] = { '\0' };
+					size_t total = 0;
 					while(int size = client.Recv(buffer, 1024, 0)) {
-						strncpy(response.data, buffer, size);
+						strncpy(response->data, buffer, size);
+						if(size > 1024) response->data[total] = '\0';
+						total += size;
 					}
+
+
+					response->text = string(response->data);
 
 					client.Close();
 					return response;
@@ -296,10 +323,11 @@ namespace xsystem {
 				Request(string base):base(base) {
 					if(this->base.length() > 7) {
 						if(this->base.at(4) == 's' || this->base.at(4) == 'S') port = 443;
-						int index = 0;
+						size_t index = 0;
 						while(this->base.at(index) != ':') index++;
-						this->domain = this->base.substr(index + 3, this->base.length());// : split
+						this->domain = this->base.substr((size_t)(index + 3), this->base.length());// : split
 						this->ip = Socket::domain2ip(this->domain);
+						// :80
 					}
 				}
 				Request() {}

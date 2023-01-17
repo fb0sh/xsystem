@@ -77,6 +77,42 @@ build client.exe: CXX_EXECUTABLE_LINKER__client_Debug CMakeFiles\client.dir\test
   TARGET_PDB = client.pdb
 
 # =============================================================================
+# Object build statements for EXECUTABLE target server
+
+
+#############################################
+# Order-only phony target for server
+
+build cmake_object_order_depends_target_server: phony || CMakeFiles\server.dir
+
+build CMakeFiles\server.dir\tests\server.cpp.obj: CXX_COMPILER__server_Debug D$:\Projects\VsProjects\xsystem\tests\server.cpp || cmake_object_order_depends_target_server
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  OBJECT_DIR = CMakeFiles\server.dir
+  OBJECT_FILE_DIR = CMakeFiles\server.dir\tests
+  TARGET_COMPILE_PDB = CMakeFiles\server.dir\
+  TARGET_PDB = server.pdb
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target server
+
+
+#############################################
+# Link the executable server.exe
+
+build server.exe: CXX_EXECUTABLE_LINKER__server_Debug CMakeFiles\server.dir\tests\server.cpp.obj
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
+  LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  OBJECT_DIR = CMakeFiles\server.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = CMakeFiles\server.dir\
+  TARGET_FILE = server.exe
+  TARGET_IMPLIB = server.lib
+  TARGET_PDB = server.pdb
+
+# =============================================================================
 # Object build statements for EXECUTABLE target testhttp
 
 
@@ -112,6 +148,42 @@ build testhttp.exe: CXX_EXECUTABLE_LINKER__testhttp_Debug CMakeFiles\testhttp.di
   TARGET_IMPLIB = testhttp.lib
   TARGET_PDB = testhttp.pdb
 
+# =============================================================================
+# Object build statements for EXECUTABLE target testhttpserver
+
+
+#############################################
+# Order-only phony target for testhttpserver
+
+build cmake_object_order_depends_target_testhttpserver: phony || CMakeFiles\testhttpserver.dir
+
+build CMakeFiles\testhttpserver.dir\tests\testhttpserver.cpp.obj: CXX_COMPILER__testhttpserver_Debug D$:\Projects\VsProjects\xsystem\tests\testhttpserver.cpp || cmake_object_order_depends_target_testhttpserver
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  OBJECT_DIR = CMakeFiles\testhttpserver.dir
+  OBJECT_FILE_DIR = CMakeFiles\testhttpserver.dir\tests
+  TARGET_COMPILE_PDB = CMakeFiles\testhttpserver.dir\
+  TARGET_PDB = testhttpserver.pdb
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target testhttpserver
+
+
+#############################################
+# Link the executable testhttpserver.exe
+
+build testhttpserver.exe: CXX_EXECUTABLE_LINKER__testhttpserver_Debug CMakeFiles\testhttpserver.dir\tests\testhttpserver.cpp.obj
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
+  LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  OBJECT_DIR = CMakeFiles\testhttpserver.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = CMakeFiles\testhttpserver.dir\
+  TARGET_FILE = testhttpserver.exe
+  TARGET_IMPLIB = testhttpserver.lib
+  TARGET_PDB = testhttpserver.pdb
+
 
 #############################################
 # Utility command for edit_cache
@@ -140,7 +212,11 @@ build rebuild_cache: phony CMakeFiles\rebuild_cache.util
 
 build client: phony client.exe
 
+build server: phony server.exe
+
 build testhttp: phony testhttp.exe
+
+build testhttpserver: phony testhttpserver.exe
 
 # =============================================================================
 # Folder targets.
@@ -150,7 +226,7 @@ build testhttp: phony testhttp.exe
 #############################################
 # Folder: D:/Projects/VsProjects/xsystem/out/build/x64-Debug
 
-build all: phony client.exe testhttp.exe
+build all: phony client.exe server.exe testhttp.exe testhttpserver.exe
 
 # =============================================================================
 # Built-in targets
