@@ -146,7 +146,7 @@ namespace xsystem {
 			#if _WIN32
 				client->fd = accept(this->fd, (struct sockaddr *)(&client->address.addr), &c_size);
 			#else
-				client->fd = accept(this->fd, (struct sockaddr *)(&client.address.addr), (socklen_t *)&c_size);
+				client->fd = accept(this->fd, (struct sockaddr *)(&client->address.addr), (socklen_t *)&c_size);
 			#endif
 				client->address.host = inet_ntoa(client->address.addr.sin_addr);
 				client->address.port = ntohs(client->address.addr.sin_port);
@@ -440,7 +440,7 @@ HTTP_CONTENT:
 							this->ip = Socket::domain2ip(this->domain.substr(0, t));
 							//if(size_t s =this->ip.)
 							string port = this->domain.substr(t + 1, this->domain.length());
-							if(port != this->ip) this->port = stoul(port);
+							if(port != this->ip) this->port = stoul(port);// 依旧有问题 在 linux 下
 						}
 					}
 				}
