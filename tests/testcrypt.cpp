@@ -21,4 +21,7 @@ int main() {
 	// md5
 	result = Md5::Encode((unsigned char *)text.c_str(), text.size());
 	cout << result << endl;
+	// md5 file
+	result = Md5::FileEncode("server.exe");
+	cout << result << endl;
 }

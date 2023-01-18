@@ -49,7 +49,7 @@ using std::pair;
 #include <memory>
 using std::shared_ptr;
 
-//c
+
 #include <stdint.h>
 
 namespace xsystem {
@@ -193,7 +193,7 @@ namespace xsystem {
 					H0 += A, H1 += B, H2 += C, H3 += D, H4 += E, H5 += F, H6 += G, H7 += H;
 				}
 				free(pp - l);
-				sprintf(SHA256, "%08X%08X%08X%08X%08X%08X%08X%08X", H0, H1, H2, H3, H4, H5, H6, H7);
+				sprintf(SHA256, "%08X%08X%08X%08X%08X%08X%08X%08X", (unsigned int)H0, (unsigned int)H1, (unsigned int)H2, (unsigned int)H3, (unsigned int)H4, (unsigned int)H5, (unsigned int)H6, (unsigned int)H7);
 				SHA256[256] = '\0';
 				return SHA256;
 
@@ -410,7 +410,7 @@ namespace xsystem {
 						str += temp;
 					}
 
-					return temp;
+					return str;
 				}// class Md5 FileEncode()
 
 			public:
