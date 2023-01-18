@@ -339,7 +339,7 @@ namespace xsystem {
 					http_packet += HTTP_DELIM;
 					switch(method) {
 						case xsystem::net::http::GET:
-							break;
+break;
 						case xsystem::net::http::POST:
 							http_packet += this->body; break;
 							break;
@@ -436,11 +436,21 @@ HTTP_CONTENT:
 						size_t index = 0;
 						while(this->base.at(index) != ':') index++;
 						this->domain = this->base.substr((size_t)(index + 3), this->base.length());// : split
+
 						if(size_t t = this->domain.find(':')) {
 							this->ip = Socket::domain2ip(this->domain.substr(0, t));
-							//if(size_t s =this->ip.)
-							string port = this->domain.substr(t + 1, this->domain.length());
-							if(port != this->ip) this->port = stoul(port);// 依旧有问题 在 linux 下
+							// if(size_t s =this->ip.)
+
+
+							int f = this->domain.length() - this->ip.length();
+							if(f > 1) {
+								string port = this->domain.substr(t + 1, this->domain.length());
+								this->port = stoul(port);
+							}
+
+
+
+							
 						}
 					}
 				}
