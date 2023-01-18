@@ -1,6 +1,7 @@
 D:/Projects/VsProjects/xsystem/out/build/x64-Debug/CMakeFiles/client.dir
 D:/Projects/VsProjects/xsystem/out/build/x64-Debug/CMakeFiles/server.dir
 D:/Projects/VsProjects/xsystem/out/build/x64-Debug/CMakeFiles/testhttp.dir
+D:/Projects/VsProjects/xsystem/out/build/x64-Debug/CMakeFiles/testproxyhttp.dir
 D:/Projects/VsProjects/xsystem/out/build/x64-Debug/CMakeFiles/testhttpserver.dir
 D:/Projects/VsProjects/xsystem/out/build/x64-Debug/CMakeFiles/edit_cache.dir
 D:/Projects/VsProjects/xsystem/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir

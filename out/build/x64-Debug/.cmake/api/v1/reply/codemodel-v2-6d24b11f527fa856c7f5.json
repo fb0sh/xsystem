@@ -18,7 +18,8 @@
 						0,
 						1,
 						2,
-						3
+						3,
+						4
 					]
 				}
 			],
@@ -36,7 +37,8 @@
 						0,
 						1,
 						2,
-						3
+						3,
+						4
 					]
 				}
 			],
@@ -66,8 +68,15 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "testhttpserver::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-testhttpserver-Debug-75649f6f4c7e60097d99.json",
+					"jsonFile" : "target-testhttpserver-Debug-e2905792263bfb139fb9.json",
 					"name" : "testhttpserver",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "testproxyhttp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-testproxyhttp-Debug-47c39d78c416bc07b055.json",
+					"name" : "testproxyhttp",
 					"projectIndex" : 0
 				}
 			]

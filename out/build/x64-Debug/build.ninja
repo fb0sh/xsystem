@@ -149,6 +149,42 @@ build testhttp.exe: CXX_EXECUTABLE_LINKER__testhttp_Debug CMakeFiles\testhttp.di
   TARGET_PDB = testhttp.pdb
 
 # =============================================================================
+# Object build statements for EXECUTABLE target testproxyhttp
+
+
+#############################################
+# Order-only phony target for testproxyhttp
+
+build cmake_object_order_depends_target_testproxyhttp: phony || CMakeFiles\testproxyhttp.dir
+
+build CMakeFiles\testproxyhttp.dir\tests\testproxyhttp.cpp.obj: CXX_COMPILER__testproxyhttp_Debug D$:\Projects\VsProjects\xsystem\tests\testproxyhttp.cpp || cmake_object_order_depends_target_testproxyhttp
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  OBJECT_DIR = CMakeFiles\testproxyhttp.dir
+  OBJECT_FILE_DIR = CMakeFiles\testproxyhttp.dir\tests
+  TARGET_COMPILE_PDB = CMakeFiles\testproxyhttp.dir\
+  TARGET_PDB = testproxyhttp.pdb
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target testproxyhttp
+
+
+#############################################
+# Link the executable testproxyhttp.exe
+
+build testproxyhttp.exe: CXX_EXECUTABLE_LINKER__testproxyhttp_Debug CMakeFiles\testproxyhttp.dir\tests\testproxyhttp.cpp.obj
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -MDd
+  LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
+  LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  OBJECT_DIR = CMakeFiles\testproxyhttp.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = CMakeFiles\testproxyhttp.dir\
+  TARGET_FILE = testproxyhttp.exe
+  TARGET_IMPLIB = testproxyhttp.lib
+  TARGET_PDB = testproxyhttp.pdb
+
+# =============================================================================
 # Object build statements for EXECUTABLE target testhttpserver
 
 
@@ -218,6 +254,8 @@ build testhttp: phony testhttp.exe
 
 build testhttpserver: phony testhttpserver.exe
 
+build testproxyhttp: phony testproxyhttp.exe
+
 # =============================================================================
 # Folder targets.
 
@@ -226,7 +264,7 @@ build testhttpserver: phony testhttpserver.exe
 #############################################
 # Folder: D:/Projects/VsProjects/xsystem/out/build/x64-Debug
 
-build all: phony client.exe server.exe testhttp.exe testhttpserver.exe
+build all: phony client.exe server.exe testhttp.exe testproxyhttp.exe testhttpserver.exe
 
 # =============================================================================
 # Built-in targets

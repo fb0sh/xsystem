@@ -9,6 +9,8 @@ using std::endl;
 int main() {
 	HttpInit();
 	Request req("http://192.168.0.103:80");
+	auto p = req.Connect("http://192.168.0.103:8080");
+	cout << p->all << endl;
 	cout << req.domain << endl;
 	cout << req.port << endl;
 	cout << req.ip << endl;

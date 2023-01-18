@@ -178,6 +178,7 @@ namespace xsystem {
 
 			const string HTTP_DELIM = "\r\n";
 			const string HTTP_VERSION = "HTTP/1.1";
+			const string HTTP_USERAGENT = "xsystem-request/0";
 
 			static int HttpInit() {
 				return Socket::Init();
@@ -195,6 +196,7 @@ namespace xsystem {
 
 			class Response {
 			public:
+				string all;
 				string status_code;
 				string status;
 				string url;
@@ -227,10 +229,23 @@ namespace xsystem {
 				string body;
 				unsigned int port = 80;
 				map<string, string> headers;
-				int keep_connection = 0; // client exist
 				shared_ptr<Socket> client;
+			private:
+				int proxy = 0;
+				string proxy_url;
+				int keep_connection = 0; // client exist
 
 			public:
+				string GetProxy() {
+					return this->proxy_url;
+				}
+				int UnsetProxy() {
+					Request temp(this->base);
+					this->ip = temp.ip;
+					this->port = temp.port;
+					this->domain = temp.domain;
+					return (this->proxy = 0);
+				}
 				shared_ptr<Response> Get(string path = "/") {// /getip/id=3
 					return this->PrepareHttpRequest(path, GET);
 				}
@@ -239,18 +254,26 @@ namespace xsystem {
 					return this->PrepareHttpRequest(path, POST);
 				}
 				// proxy
-				shared_ptr<Response> Connect(string proxy_ip, unsigned int port, string path = "/") {
+				shared_ptr<Response> Connect(string proxy_url) {
+					this->proxy_url = proxy_url;
+					Request temp(proxy_url);
 					shared_ptr<Socket> client(new Socket(AF_INET, SOCK_STREAM, 0));
-					this->keep_connection = 1;
+					client->Connect(Socket::domain2ip(temp.ip), temp.port);
+					this->ip = temp.ip;
+					this->port = temp.port;
+					this->domain = temp.domain;
 					this->client = client;
-					this->client->Connect(Socket::domain2ip(proxy_ip), port);
-					return this->FuckHandleHttpRequest(this->client,"/", CONNECT);	
+					this->keep_connection = 1;
+					shared_ptr<Response> response = this->FuckHandleHttpRequest(this->client, "/", CONNECT);
+					//cout << response->all << endl;// getall
+					return response;
 				}
 
 			private:
 				shared_ptr<Response> PrepareHttpRequest(string path, HTTP_METHOD method) {
 					this->headers.insert({ "Accept","*/*" });
-					this->headers.insert({ "User-Agent", "xsystem-request/0" });
+					this->headers.insert({ "Host", this->domain });
+					this->headers.insert({ "User-Agent", HTTP_USERAGENT });
 
 					if(!this->headers.count("Connection")) {
 						this->headers.insert({ "Connection","close" });
@@ -265,7 +288,7 @@ namespace xsystem {
 						return response;
 					} else {
 						shared_ptr<Socket> client(new Socket(AF_INET, SOCK_STREAM, 0));
-						client->Connect(this->ip, this->port);
+						client->Connect(this->ip, this->port); // vital connect
 						if(!(this->headers["Connection"] == "close")) {
 							this->keep_connection = 1;
 							this->client = client;
@@ -284,14 +307,13 @@ namespace xsystem {
 							http_packet = "GET "; break;
 						case xsystem::net::http::POST:
 							http_packet = "POST "; break;
-						case xsystem::net::http::CONNECT:
-							http_packet = "CONNECT "; break;
 						default:
 							http_packet = "GET "; break;
 					}
 
+					if(this->proxy) http_packet += this->base;
 					http_packet += path + " " + HTTP_VERSION + HTTP_DELIM;
-					http_packet += "Host: " + this->domain + HTTP_DELIM;
+
 					for(pair<string, string> item : this->headers) {
 						http_packet += item.first + ": " + item.second + HTTP_DELIM;
 					}
@@ -302,15 +324,13 @@ namespace xsystem {
 							break;
 						case xsystem::net::http::POST:
 							http_packet += this->body; break;
+							break;
 						case xsystem::net::http::CONNECT:
-							http_packet = "CONNECT " + this->domain + " " + HTTP_VERSION + HTTP_DELIM
+							http_packet = "CONNECT " + this->base + path + " " + HTTP_VERSION + HTTP_DELIM
 								+ "Host: " + this->domain + HTTP_DELIM
-								+ "Proxy-Connection: Keep-Alive" + HTTP_DELIM
-								+ "Proxy-Authorization: Basic *" + HTTP_DELIM
-								+ "Content-Length: 0" + HTTP_DELIM
+								+ "User-Agent: " + HTTP_USERAGENT + HTTP_DELIM
 								+ HTTP_DELIM
-								; break;
-						default:
+								;
 							break;
 					}
 
@@ -318,18 +338,29 @@ namespace xsystem {
 
 					// first line
 					char c;
-					while(client->Recv(&c, 1, 0) && c != ' ');// HTTP/1.1
-					while(client->Recv(&c, 1, 0) && c != ' ') response->status_code += c;
-					while(client->Recv(&c, 1, 0) && c != '\r') response->status += c;
+					while(client->Recv(&c, 1, 0) && c != ' ') {
+						response->all += c;
+					}; response->all += ' ';// HTTP/1.1
+					while(client->Recv(&c, 1, 0) && c != ' ') {
+						response->all += c;
+						response->status_code += c;
+					}; response->all += ' ';
+					while(client->Recv(&c, 1, 0) && c != '\r') {
+						response->all += c;
+						response->status += c;
+					}
 					// others
 					int flag = 1; // 
 					while(flag) {
 						string first, second;
 						while(int len = client->Recv(&c, 1, 0)) {
+							response->all += c;
 							if(c == '\n') {
 								client->Recv(&c, 1, 0);
+								response->all += c;
 								if(c == '\r') {
 									client->Recv(&c, 1, 0);
+									response->all += c;
 									if(c == '\n') {
 										flag = 0;
 										goto HTTP_CONTENT;
@@ -342,7 +373,9 @@ namespace xsystem {
 						}
 
 						client->Recv(&c, 1, 0);// Space
+						response->all += c;
 						while(client->Recv(&c, 1, 0) && c != '\r') {
+							response->all += c;
 							second += c;
 						}
 
@@ -363,6 +396,7 @@ HTTP_CONTENT:
 					char buffer[1024] = { '\0' };
 					size_t total = 0;
 					while(int size = client->Recv(buffer, 1024, 0)) {
+						response->all += buffer;
 						strncpy(response->data, buffer, size);
 						if(size > 1024) response->data[total] = '\0';
 						total += size;
