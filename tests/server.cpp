@@ -14,12 +14,10 @@ int main(){
   auto c = s.Accept();
   
   char buf[1024]="Hello!";
-  c.Send(buf,1024,0);
-  c.Recv(buf,1024,0);
+  c->Send(buf,1024,0);
+  c->Recv(buf,1024,0);
   cout << buf << endl;
   
-  c.Close();
-  s.Close();
   Socket::Exit();
   return 0;
 }

@@ -14,8 +14,7 @@ int main(){
   c.Send(buf,1024,0);
   c.Recv(buf,1024,0);
   cout << buf << endl;
-  
-  c.Close();
+
   Socket::Exit();
   return 0;
 }

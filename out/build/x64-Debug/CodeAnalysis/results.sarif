@@ -26,7 +26,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "d7178318511707eb92fa919c7594d8face48e1cb65ed60b893077b8fae328e27"
+            "sha-256": "4b8c0903aab905360668e068ff703d524bd6d54550703c41117c29d285a2e37f"
           }
         },
         {
@@ -34,7 +34,7 @@
             "uri": "file:///d:/projects/vsprojects/xsystem/xsystem.hpp"
           },
           "hashes": {
-            "sha-256": "3898f8712d1e8937d27c78bfa800fa6a64ea6659305dcb9e65e689e0f21ad9d7"
+            "sha-256": "d7b1b6d3b1965b841f3154149ad1f70c3afc97574f55cd872c1bb37bcc5124a3"
           }
         }
       ]

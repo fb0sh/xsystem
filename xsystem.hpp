@@ -22,7 +22,8 @@
 
 #include <string>
 using std::string;
-using std::stoll;
+using std::stoull;
+using std::stoul;
 
 #include <iostream>
 using std::cout;
@@ -122,20 +123,20 @@ namespace xsystem {
 				return send(this->fd, buf, (int)len, flags);
 			}
 
-			int Recv(char *buf, size_t len,  int flags) {
+			int Recv(char *buf, size_t len, int flags) {
 				return recv(this->fd, buf, (int)len, flags);
 			}
 
-			Socket Accept() {
-				Socket client;
+			shared_ptr<Socket> Accept() {
+				shared_ptr<Socket> client(new Socket);
 				int c_size = sizeof(struct sockaddr);
 			#if _WIN32
-				client.fd = accept(this->fd, (struct sockaddr *)(&client.address.addr), &c_size);
+				client->fd = accept(this->fd, (struct sockaddr *)(&client->address.addr), &c_size);
 			#else
-				client.fd = accept(this->fd, (struct sockaddr *)(&client.address.addr), (socklen_t *)&c_size);
+				client->fd = accept(this->fd, (struct sockaddr *)(&client.address.addr), (socklen_t *)&c_size);
 			#endif
-				client.address.host = inet_ntoa(client.address.addr.sin_addr);
-				client.address.port = ntohs(client.address.addr.sin_port);
+				client->address.host = inet_ntoa(client->address.addr.sin_addr);
+				client->address.port = ntohs(client->address.addr.sin_port);
 				return client;
 			}
 
@@ -168,7 +169,9 @@ namespace xsystem {
 				this->fd = -1;
 			}
 
-			~Socket() {}
+			~Socket() {
+				this->Close();
+			}
 		};
 
 		namespace http {
@@ -202,7 +205,7 @@ namespace xsystem {
 			public:
 				Response() {
 					this->data = (char *)malloc(sizeof(char) * 1024);
-					if(this->data!=0) memset(this->data, '\0', 1024);
+					if(this->data != 0) memset(this->data, '\0', 1024);
 				}
 
 				Response(string url): url(url) {
@@ -223,57 +226,110 @@ namespace xsystem {
 				string ip;
 				string body;
 				unsigned int port = 80;
-				map<string, string> headers = {
-					{"Accept","*/*"},
-					{"Connection","close"},
-					{"User-Agent", "xsystem-request/0"}
-				};
+				map<string, string> headers;
+				int keep_connection = 0; // client exist
+				shared_ptr<Socket> client;
 
 			public:
 				shared_ptr<Response> Get(string path = "/") {// /getip/id=3
-					return this->FuckHandleHttpRequest(GET, path);
+					return this->PrepareHttpRequest(path, GET);
 				}
+
 				shared_ptr<Response> Post(string path = "/") {
-					return this->FuckHandleHttpRequest(POST, path);
+					return this->PrepareHttpRequest(path, POST);
 				}
+				// proxy
+				shared_ptr<Response> Connect(string proxy_ip, unsigned int port, string path = "/") {
+					shared_ptr<Socket> client(new Socket(AF_INET, SOCK_STREAM, 0));
+					this->keep_connection = 1;
+					this->client = client;
+					this->client->Connect(Socket::domain2ip(proxy_ip), port);
+					return this->FuckHandleHttpRequest(this->client,"/", CONNECT);	
+				}
+
 			private:
-				shared_ptr<Response> FuckHandleHttpRequest(HTTP_METHOD method, string path) {
+				shared_ptr<Response> PrepareHttpRequest(string path, HTTP_METHOD method) {
+					this->headers.insert({ "Accept","*/*" });
+					this->headers.insert({ "User-Agent", "xsystem-request/0" });
+
+					if(!this->headers.count("Connection")) {
+						this->headers.insert({ "Connection","close" });
+					}
+
+					if(this->keep_connection) {
+						shared_ptr<Response> response = this->FuckHandleHttpRequest(this->client, path, method);
+						if(this->headers["Connection"] == "close") {
+							this->keep_connection = 0;
+							this->client = NULL; // 释放之前
+						}
+						return response;
+					} else {
+						shared_ptr<Socket> client(new Socket(AF_INET, SOCK_STREAM, 0));
+						client->Connect(this->ip, this->port);
+						if(!(this->headers["Connection"] == "close")) {
+							this->keep_connection = 1;
+							this->client = client;
+						}
+						return this->FuckHandleHttpRequest(client, path, method);
+
+					}
+				}
+
+				shared_ptr<Response> FuckHandleHttpRequest(shared_ptr<Socket> client, string path, HTTP_METHOD method) {
 					shared_ptr<Response> response(new Response(this->base + path));
 					// http packet construction
 					string http_packet;
-					if(method == GET) {
-						http_packet = "GET ";
-					} else if(method == POST) {
-						http_packet = "POST ";
+					switch(method) {
+						case xsystem::net::http::GET:
+							http_packet = "GET "; break;
+						case xsystem::net::http::POST:
+							http_packet = "POST "; break;
+						case xsystem::net::http::CONNECT:
+							http_packet = "CONNECT "; break;
+						default:
+							http_packet = "GET "; break;
 					}
 
 					http_packet += path + " " + HTTP_VERSION + HTTP_DELIM;
-					http_packet += "Host: " + this->ip + HTTP_DELIM;
+					http_packet += "Host: " + this->domain + HTTP_DELIM;
 					for(pair<string, string> item : this->headers) {
 						http_packet += item.first + ": " + item.second + HTTP_DELIM;
 					}
 
 					http_packet += HTTP_DELIM;
-					if(method == POST) http_packet += this->body;
+					switch(method) {
+						case xsystem::net::http::GET:
+							break;
+						case xsystem::net::http::POST:
+							http_packet += this->body; break;
+						case xsystem::net::http::CONNECT:
+							http_packet = "CONNECT " + this->domain + " " + HTTP_VERSION + HTTP_DELIM
+								+ "Host: " + this->domain + HTTP_DELIM
+								+ "Proxy-Connection: Keep-Alive" + HTTP_DELIM
+								+ "Proxy-Authorization: Basic *" + HTTP_DELIM
+								+ "Content-Length: 0" + HTTP_DELIM
+								+ HTTP_DELIM
+								; break;
+						default:
+							break;
+					}
 
-					Socket client(AF_INET, SOCK_STREAM, 0);
-					client.Connect(this->ip, this->port);
-					client.Send(http_packet.c_str(), http_packet.length(), 0);
+					client->Send(http_packet.c_str(), http_packet.length(), 0);
 
 					// first line
 					char c;
-					while(client.Recv(&c, 1, 0) && c != ' ');// HTTP/1.1
-					while(client.Recv(&c, 1, 0) && c != ' ') response->status_code += c;
-					while(client.Recv(&c, 1, 0) && c != '\r') response->status += c;
+					while(client->Recv(&c, 1, 0) && c != ' ');// HTTP/1.1
+					while(client->Recv(&c, 1, 0) && c != ' ') response->status_code += c;
+					while(client->Recv(&c, 1, 0) && c != '\r') response->status += c;
 					// others
 					int flag = 1; // 
 					while(flag) {
 						string first, second;
-						while(int len = client.Recv(&c, 1, 0)) {
+						while(int len = client->Recv(&c, 1, 0)) {
 							if(c == '\n') {
-								client.Recv(&c, 1, 0);
+								client->Recv(&c, 1, 0);
 								if(c == '\r') {
-									client.Recv(&c, 1, 0);
+									client->Recv(&c, 1, 0);
 									if(c == '\n') {
 										flag = 0;
 										goto HTTP_CONTENT;
@@ -285,8 +341,8 @@ namespace xsystem {
 							} else break;
 						}
 
-						client.Recv(&c, 1, 0);// Space
-						while(client.Recv(&c, 1, 0) && c != '\r') {
+						client->Recv(&c, 1, 0);// Space
+						while(client->Recv(&c, 1, 0) && c != '\r') {
 							second += c;
 						}
 
@@ -296,7 +352,7 @@ namespace xsystem {
 HTTP_CONTENT:
 
 					if(response->headers.count("Content-Length")) {
-						size_t size = stoll(response->headers["Content-Length"]);
+						size_t size = stoull(response->headers["Content-Length"]);
 						if(size > 1024) {
 							free(response->data);
 							response->data = (char *)malloc(sizeof(char) * size);
@@ -306,16 +362,14 @@ HTTP_CONTENT:
 
 					char buffer[1024] = { '\0' };
 					size_t total = 0;
-					while(int size = client.Recv(buffer, 1024, 0)) {
+					while(int size = client->Recv(buffer, 1024, 0)) {
 						strncpy(response->data, buffer, size);
 						if(size > 1024) response->data[total] = '\0';
 						total += size;
 					}
 
-
 					response->text = string(response->data);
 
-					client.Close();
 					return response;
 				}
 
@@ -326,19 +380,21 @@ HTTP_CONTENT:
 						size_t index = 0;
 						while(this->base.at(index) != ':') index++;
 						this->domain = this->base.substr((size_t)(index + 3), this->base.length());// : split
-						this->ip = Socket::domain2ip(this->domain);
-						// :80
+						if(size_t t = this->domain.find(':')) {
+							this->ip = Socket::domain2ip(this->domain.substr(0, t));
+							//if(size_t s =this->ip.)
+							string port = this->domain.substr(t + 1, this->domain.length());
+							if(port != this->ip) this->port = stoul(port);
+						}
 					}
 				}
+
 				Request() {}
+
 				~Request() {}
 			};
 		};
 	};
 };
-
-
-
-
 
 #endif
