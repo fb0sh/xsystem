@@ -1,4 +1,15 @@
-﻿#pragma once
+﻿/*****************************************************************************
+*  @file     xsystem.h                                                       *
+*  @brief    跨平台库															 *
+*  Details.                                                                  *
+*                                                                            *
+*  @author   FreetBash                                                       *
+*  @email    freet-bash@qq.com												 *
+*  @version  0																 *
+*  @date     2023/1/18														 *
+*  @license  (MIT)															 *
+*****************************************************************************/
+#pragma once
 #ifndef __XSYSTEM__
 #define __XSYSTEM__
 
@@ -18,6 +29,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #define SOCKET int
+
 #endif
 
 #include <string>
@@ -45,6 +57,7 @@ namespace xsystem {
 			string host;
 			unsigned int port;
 			struct sockaddr_in addr;
+
 		public:
 			Address() {
 				memset(&this->addr, 0, sizeof(this->addr));
@@ -230,6 +243,7 @@ namespace xsystem {
 				unsigned int port = 80;
 				map<string, string> headers;
 				shared_ptr<Socket> client;
+
 			private:
 				int proxy = 0;
 				string proxy_url;
@@ -239,6 +253,7 @@ namespace xsystem {
 				string GetProxy() {
 					return this->proxy_url;
 				}
+
 				int UnsetProxy() {
 					Request temp(this->base);
 					this->ip = temp.ip;
@@ -246,6 +261,7 @@ namespace xsystem {
 					this->domain = temp.domain;
 					return (this->proxy = 0);
 				}
+
 				shared_ptr<Response> Get(string path = "/") {// /getip/id=3
 					return this->PrepareHttpRequest(path, GET);
 				}
@@ -285,6 +301,7 @@ namespace xsystem {
 							this->keep_connection = 0;
 							this->client = NULL; // 释放之前
 						}
+
 						return response;
 					} else {
 						shared_ptr<Socket> client(new Socket(AF_INET, SOCK_STREAM, 0));
@@ -293,6 +310,7 @@ namespace xsystem {
 							this->keep_connection = 1;
 							this->client = client;
 						}
+
 						return this->FuckHandleHttpRequest(client, path, method);
 
 					}
@@ -341,14 +359,17 @@ namespace xsystem {
 					while(client->Recv(&c, 1, 0) && c != ' ') {
 						response->all += c;
 					}; response->all += ' ';// HTTP/1.1
+
 					while(client->Recv(&c, 1, 0) && c != ' ') {
 						response->all += c;
 						response->status_code += c;
 					}; response->all += ' ';
+
 					while(client->Recv(&c, 1, 0) && c != '\r') {
 						response->all += c;
 						response->status += c;
 					}
+
 					// others
 					int flag = 1; // 
 					while(flag) {
@@ -411,6 +432,7 @@ HTTP_CONTENT:
 				Request(string base):base(base) {
 					if(this->base.length() > 7) {
 						if(this->base.at(4) == 's' || this->base.at(4) == 'S') port = 443;
+
 						size_t index = 0;
 						while(this->base.at(index) != ':') index++;
 						this->domain = this->base.substr((size_t)(index + 3), this->base.length());// : split
