@@ -12,6 +12,13 @@
 #pragma once
 #ifndef __XSYSTEM__
 #define __XSYSTEM__
+#define SSL_ENABLE 1
+// ssl
+#if SSL_ENABLE
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+#endif
 
 // windows ok!
 #if _WIN32
@@ -20,6 +27,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <Winsock2.h>
 #pragma comment (lib, "ws2_32.lib") 
+
+#if SSL_ENABLE
+#pragma comment(lib,"libssl.lib")
+#pragma comment(lib,"libcrypto.lib")
+
+#endif
 
 // linux ok!
 #else 
@@ -31,6 +44,8 @@
 #define SOCKET int
 
 #endif
+
+
 
 // c++
 #include <string>
@@ -218,7 +233,7 @@ namespace xsystem {
 			#define HH(a,b,c,d,x,s,ac) { a += H(b,c,d) + x + ac; a = ROTATE_LEFT(a,s); a += b; }
 			#define II(a,b,c,d,x,s,ac) { a += I(b,c,d) + x + ac; a = ROTATE_LEFT(a,s); a += b; }
 			public:
-				
+
 				static void MD5Init(MD5_CTX *context) {
 					context->count[0] = 0;
 					context->count[1] = 0;
@@ -377,12 +392,12 @@ namespace xsystem {
 					MD5Update(&md5, data, len);
 					MD5Final(&md5, decrypt);
 					for(int i = 0; i < 16; ++i) {
-						sprintf(temp,"%02x", decrypt[i]);  //02x前需要加上 %
-						str+=temp;
+						sprintf(temp, "%02x", decrypt[i]);  //02x前需要加上 %
+						str += temp;
 					}
 					return str;
 				}// class Md5 Encode()
-				
+
 				static string FileEncode(string file_path) {
 					MD5_CTX md5;
 					unsigned char decrypt[16];
@@ -406,7 +421,7 @@ namespace xsystem {
 					MD5Final(&md5, decrypt);
 
 					for(int i = 0; i < 16; i++) {
-						sprintf(temp,"%02x", decrypt[i]);  //02x前需要加上 %
+						sprintf(temp, "%02x", decrypt[i]);  //02x前需要加上 %
 						str += temp;
 					}
 
@@ -440,15 +455,22 @@ namespace xsystem {
 		};// namespace net class Adress
 
 		class Socket {
+		#if SSL_ENABLE
 		public:
-			SOCKET fd;
+			SSL_CTX *ctx;
+			SSL *ssl;
+		#endif
+		public:
 			Address address;
+			SOCKET fd;
+
 
 		public:
 			static string domain2ip(string domain) {
 				char ip[16];
 			#if _WIN32
 				HOSTENT *host = gethostbyname(domain.c_str());
+				if(host == nullptr) throw "eeeeeeeeeeeeeerrrrrrror";
 				strcpy(ip, inet_ntoa(*(struct in_addr *)*host->h_addr_list));
 			#else
 				struct hostent *host = gethostbyname(domain.c_str());
@@ -458,6 +480,11 @@ namespace xsystem {
 			}// class Socket domain2ip()
 
 			static int Init() {
+			#if SSL_ENABLE
+				SSL_load_error_strings();
+				SSLeay_add_ssl_algorithms();
+			#endif
+
 			#if _WIN32
 				WSADATA wsData;
 				WORD wsVersion = MAKEWORD(2, 2);
@@ -490,6 +517,10 @@ namespace xsystem {
 			}// class Socket Bind()
 
 			int Connect(string host, unsigned int port) {
+				// client
+			#if SSL_ENABLE
+				this->ctx = SSL_CTX_new(SSLv23_client_method());
+			#endif
 				struct sockaddr_in target;
 				target.sin_family = this->address.addr.sin_family;
 				target.sin_port = htons(port);
@@ -498,19 +529,38 @@ namespace xsystem {
 			#else
 				target.sin_addr.s_addr = inet_addr(host.c_str());
 			#endif
-				return connect(this->fd, (const struct sockaddr *)(&target), sizeof(target));
+				int connect_status = connect(this->fd, (const struct sockaddr *)(&target), sizeof(target));
+			#if SSL_ENABLE
+				this->ssl = SSL_new(ctx);
+				SSL_set_fd(this->ssl, this->fd);
+				connect_status = SSL_connect(this->ssl);
+			#endif
+				return connect_status;
+
 			}// class Socket Connect()
 
 			int Listen(int backlog) {
 				return listen(this->fd, backlog);
 			}// class Socket Listen()
 
-			int Send(const char *buf, size_t len, int flags) {
-				return send(this->fd, buf, (int)len, flags);
+			int Send(const char *buf, size_t len, int flags = 0) {
+				int send_status;
+			#if SSL_ENABLE
+				send_status = SSL_write(this->ssl, buf, (int)len);
+			#else
+				send_status = send(this->fd, buf, (int)len, flags);
+			#endif
+				return send_status;
 			}// class Socket Send()
 
-			int Recv(char *buf, size_t len, int flags) {
-				return recv(this->fd, buf, (int)len, flags);
+			int Recv(char *buf, size_t len, int flags = 0) {
+				int recv_status;
+			#if SSL_ENABLE
+				recv_status = SSL_read(this->ssl, buf, (int)len);
+			#else
+				recv_status = recv(this->fd, buf, (int)len, flags);
+			#endif
+				return recv_status;
 			}// class Socket Recv()
 
 			shared_ptr<Socket> Accept() {
@@ -523,10 +573,23 @@ namespace xsystem {
 			#endif
 				client->address.host = inet_ntoa(client->address.addr.sin_addr);
 				client->address.port = ntohs(client->address.addr.sin_port);
+			#if SSL_ENABLE
+				client->ssl = SSL_new(SSL_CTX_new(SSLv23_server_method()));
+				SSL_set_fd(client->ssl, client->fd);
+				if(SSL_accept(client->ssl) == -1) {
+					perror("SSL accpet error");
+					exit(-1);
+				}
+			#endif
 				return client;
 			}// class Socket Accpet()
 
 			int Close() {
+			#if SSL_ENABLE
+				SSL_shutdown(this->ssl);
+				SSL_free(this->ssl);
+				SSL_CTX_free(this->ctx);
+			#endif
 			#if _WIN32
 				return closesocket(this->fd);
 			#else
@@ -558,7 +621,7 @@ namespace xsystem {
 			~Socket() {
 				this->Close();
 			}
-		};// class Socket
+			};// class Socket
 
 		namespace http {
 
@@ -833,7 +896,7 @@ HTTP_CONTENT:
 				~Request() {}
 			};// namespace http class Request
 		};// namespace http
-	};// namespace net
-};// namespace xsystem
+			};// namespace net
+		};// namespace xsystem
 
 #endif

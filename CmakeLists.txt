@@ -1,12 +1,25 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.8)
 
 # set the project name
-project(Test)
+project(xsystem)
+set(WINDOWS 1)
+if(${WINDOWS})
+	include_directories("D://Environment//otherlib//OpenSSL-Win64//include")
+	link_directories("D://Environment//otherlib//OpenSSL-Win64//lib")
+endif()
+
+
+include_directories("xsystem.hpp")
 
 # add the executable
-add_executable(client "tests/client.cpp" "xsystem.hpp" )
-add_executable(server "tests/server.cpp" "xsystem.hpp" )
-add_executable(testhttp "tests/testhttp.cpp" "xsystem.hpp" )
-add_executable(testproxyhttp "tests/testproxyhttp.cpp" "xsystem.hpp" )
-add_executable(testhttpserver "tests/testhttpserver.cpp" "xsystem.hpp" )
-add_executable(testcrypt "tests/testcrypt.cpp" "xsystem.hpp" )
+add_executable(client "tests/client.cpp" )
+add_executable(server "tests/server.cpp" )
+add_executable(testhttp "tests/testhttp.cpp" )
+add_executable(testproxyhttp "tests/testproxyhttp.cpp" )
+add_executable(testhttpserver "tests/testhttpserver.cpp" )
+add_executable(testcrypt "tests/testcrypt.cpp" )
+add_executable(testhttpgetjpg "tests/testhttpgetjpg.cpp" )
+
+
+
+
