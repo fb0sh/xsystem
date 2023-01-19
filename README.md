@@ -6,7 +6,7 @@ xsystem include net http crypt etc. You can use it to build what you want extrem
 
 ## Installing xsystem
 
-Requests is available on Github: https://github.com/freetbash/xsystem
+xsystem is available on Github: https://github.com/freetbash/xsystem
 
 ```console
 git clone https://github.com/freetbash/xsystem.git
