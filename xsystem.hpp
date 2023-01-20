@@ -10,7 +10,7 @@
 *  @license  (MIT)															 *
 *****************************************************************************/
 #ifndef SSL_ENABLE
-#define SSL_ENABLE 1
+#define SSL_ENABLE 0
 #endif // !SSL_ENABLE
 
 #ifndef __XSYSTEM__
