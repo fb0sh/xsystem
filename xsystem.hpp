@@ -10,7 +10,7 @@
 *  @license  (MIT)															 *
 *****************************************************************************/
 #ifndef SSL_ENABLE
-#define SSL_ENABLE 0
+#define SSL_ENABLE 1
 #endif // !SSL_ENABLE
 
 #ifndef __XSYSTEM__
@@ -458,11 +458,11 @@ namespace xsystem {
 		class Socket {
 		#if SSL_ENABLE
 		public:
-			SSL_CTX *ctx;
 			SSL *ssl;
 		#endif
 		public:
 			Address address;
+			Address target;
 			SOCKET fd;
 
 
@@ -517,32 +517,26 @@ namespace xsystem {
 				return bind(this->fd, (struct sockaddr *)(&this->address.addr), sizeof(this->address.addr));
 			}// class Socket Bind()
 
-			int Connect(string host, unsigned int port) {
-				// client
-			#if SSL_ENABLE
-				this->ctx = SSL_CTX_new(SSLv23_client_method());
-			#endif
-				struct sockaddr_in target;
-				target.sin_family = this->address.addr.sin_family;
-				target.sin_port = htons(port);
-			#if _WIN32
-				target.sin_addr.S_un.S_addr = inet_addr(host.c_str());
-			#else
-				target.sin_addr.s_addr = inet_addr(host.c_str());
-			#endif
-				int connect_status = connect(this->fd, (const struct sockaddr *)(&target), sizeof(target));
-			#if SSL_ENABLE
-				this->ssl = SSL_new(ctx);
-				SSL_set_fd(this->ssl, this->fd);
-				connect_status = SSL_connect(this->ssl);
-			#endif
-				return connect_status;
-
-			}// class Socket Connect()
-
 			int Listen(int backlog) {
 				return listen(this->fd, backlog);
 			}// class Socket Listen()
+
+			int Connect(string host, unsigned int port) {
+				// client
+			#if SSL_ENABLE
+				this->ssl = SSL_new(SSL_CTX_new(SSLv23_client_method()));
+			#endif
+
+				this->target.addr.sin_family = this->address.addr.sin_family;
+				this->target.addr.sin_port = htons(port);
+			#if _WIN32
+				this->target.addr.sin_addr.S_un.S_addr = inet_addr(host.c_str());
+			#else
+				this->target.addr.sin_addr.s_addr = inet_addr(host.c_str());
+			#endif
+				return connect(this->fd, (const struct sockaddr *)(&this->target.addr), sizeof(this->target.addr));
+
+			}// class Socket Connect()
 
 			int Send(const char *buf, size_t len, int flags = 0) {
 				return send(this->fd, buf, (int)len, flags);
@@ -566,6 +560,13 @@ namespace xsystem {
 			}// class Socket Accpet()
 
 		#if SSL_ENABLE
+			int SSL_Connect(string host, unsigned int port) {
+				this->Connect(host, port);
+				SSL_set_fd(this->ssl, this->fd);
+				return SSL_connect(this->ssl);;
+
+			}// class Socket SSL_Connect()
+
 			int SSL_Send(const char *buf, size_t len) {
 				return SSL_write(this->ssl, buf, (int)len);
 			}// class Socket SSL_Send()
@@ -587,13 +588,12 @@ namespace xsystem {
 				return client;
 			}// class SSL_Socket Accpet()
 
-		#endif
+		#endif // SSL SOCKET
 
 			int Close() {
 			#if SSL_ENABLE
 				SSL_shutdown(this->ssl);
 				SSL_free(this->ssl);
-				SSL_CTX_free(this->ctx);
 			#endif
 			#if _WIN32
 				return closesocket(this->fd);
@@ -612,7 +612,7 @@ namespace xsystem {
 			#else
 				return getsockopt(this->fd, level, optname, optval, (socklen_t *)optlen);
 			#endif
-			}// class Socket GetSockOpt
+		}// class Socket GetSockOpt
 
 			Socket(int protofamily, int type, int protocol) {
 				this->fd = socket(protofamily, type, protocol);
@@ -621,12 +621,12 @@ namespace xsystem {
 
 			Socket() {
 				this->fd = -1;
-			}
+	}
 
 			~Socket() {
 				this->Close();
 			}
-			};// class Socket
+};// class Socket
 
 		namespace http {
 
@@ -716,7 +716,12 @@ namespace xsystem {
 					this->proxy_url = proxy_url;
 					Request temp(proxy_url);
 					shared_ptr<Socket> client(new Socket(AF_INET, SOCK_STREAM, 0));
+				#if SSL_ENABLE
+					if(this->https) client->SSL_Connect(Socket::domain2ip(temp.ip), temp.port);
+					else client->Connect(Socket::domain2ip(temp.ip), temp.port);
+				#else
 					client->Connect(Socket::domain2ip(temp.ip), temp.port);
+				#endif
 					this->ip = temp.ip;
 					this->port = temp.port;
 					this->domain = temp.domain;
@@ -793,7 +798,7 @@ namespace xsystem {
 								;
 							break;
 					}
-					
+
 					char c;// vital
 				#if SSL_ENABLE
 					if(this->https) client->SSL_Send(http_packet.c_str(), http_packet.length());
@@ -897,7 +902,7 @@ namespace xsystem {
 						response->headers.insert(pair<string, string>(first, second));
 					}
 				#endif
-					
+
 HTTP_CONTENT:
 
 					if(response->headers.count("Content-Length")) {
@@ -906,21 +911,37 @@ HTTP_CONTENT:
 							free(response->data);
 							response->data = (char *)malloc(sizeof(char) * size);
 							memset(response->data, '\0', size);
-						}
 					}
+				}
 
 					char buffer[1024] = { '\0' };
 					size_t total = 0;
+
 				#if SSL_ENABLE
-					while(int size = client->SSL_Recv(buffer, 1024)) {
-					#else
+					if(this->https) {
+						while(int size = client->SSL_Recv(buffer, 1024)) {
+							response->all += buffer;
+							strncpy(response->data, buffer, size);
+							if(size > 1024) response->data[total] = '\0';
+							total += size;
+						}
+					} else {
+						while(int size = client->Recv(buffer, 1024, 0)) {
+							response->all += buffer;
+							strncpy(response->data, buffer, size);
+							if(size > 1024) response->data[total] = '\0';
+							total += size;
+						}
+					}
+
+				#else
 					while(int size = client->Recv(buffer, 1024, 0)) {
-				#endif
 						response->all += buffer;
 						strncpy(response->data, buffer, size);
 						if(size > 1024) response->data[total] = '\0';
 						total += size;
 					}
+				#endif
 
 					response->text = string(response->data);
 
@@ -934,7 +955,7 @@ HTTP_CONTENT:
 							this->https = 1;
 							this->port = 443;
 						}
-						
+
 
 						size_t index = 0;
 						while(this->base.at(index) != ':') index++;
@@ -955,15 +976,15 @@ HTTP_CONTENT:
 
 
 						}
-					}
 				}
+			}
 
 				Request() {}
 
 				~Request() {}
-			};// namespace http class Request
+		};// namespace http class Request
 		};// namespace http
-			};// namespace net
-		};// namespace xsystem
+	};// namespace net
+};// namespace xsystem
 
 #endif
