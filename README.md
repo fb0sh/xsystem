@@ -14,7 +14,7 @@ and just include "xsystem.hpp"
 ```
 ## Usage
 ```cpp
-// The SSL_ENABLE should be placed in the front fo "include"
+// The SSL_ENABLE should be placed in the front fo "includes"
 #define SSL_ENABLE 1 // 0
 #include "xsystem.hpp"
 ```
@@ -64,6 +64,61 @@ int main(){
   char buf[1024]="Hello!";
   c.Send(buf,1024,0);
   c.Recv(buf,1024,0);
+  cout << buf << endl;
+
+  Socket::Exit();
+  return 0;
+}
+
+```
+### ssl server
+---
+```cpp
+#define SSL_ENABLE 1
+#include "../xsystem.hpp"
+using xsystem::net::Socket;
+#include <iostream>
+using std::cout;
+using std::endl;
+
+int main() {
+	Socket::Init();
+
+	Socket s(AF_INET, SOCK_STREAM, 0);
+	s.Bind("192.168.0.103", 80);
+	s.Listen(5);
+
+	auto c = s.SSL_Accept();
+
+	char buf[1024] = "Hello!";
+	c->SSL_Send(buf, 1024);
+	c->SSL_Recv(buf, 1024);
+	cout << buf << endl;
+
+	Socket::Exit();
+	return 0;
+}
+
+```
+### ssl client
+---
+```cpp
+#define SSL_ENABLE 1
+#include "../xsystem.hpp"
+using xsystem::net::Socket;
+#include <iostream>
+using std::cout;
+using std::endl;
+
+int main(){
+  Socket::Init();
+  
+  Socket c(AF_INET, SOCK_STREAM, 0);
+  c.SSL_Connect("192.168.0.103", 3147);
+  
+  char buf[1024]="Hello!";
+  c.SSL_Send(buf,1024);
+  c.SSL_Recv(buf,1024);
   cout << buf << endl;
 
   Socket::Exit();
