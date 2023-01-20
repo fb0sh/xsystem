@@ -14,7 +14,9 @@ and just include "xsystem.hpp"
 ```
 ## Usage
 ```cpp
+// The SSL_ENABLE should be placed in the front fo "include"
 #define SSL_ENABLE 1 // 0
+#include "xsystem.hpp"
 ```
 ## net socket
 ---

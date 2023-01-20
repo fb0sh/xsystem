@@ -9,11 +9,12 @@
 *  @date     2023/1/18														 *
 *  @license  (MIT)															 *
 *****************************************************************************/
-#pragma once
+#ifndef SSL_ENABLE
+#define SSL_ENABLE 0
+#endif // !SSL_ENABLE
+
 #ifndef __XSYSTEM__
 #define __XSYSTEM__
-#define SSL_ENABLE 1
-// ssl
 #if SSL_ENABLE
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -544,23 +545,11 @@ namespace xsystem {
 			}// class Socket Listen()
 
 			int Send(const char *buf, size_t len, int flags = 0) {
-				int send_status;
-			#if SSL_ENABLE
-				send_status = SSL_write(this->ssl, buf, (int)len);
-			#else
-				send_status = send(this->fd, buf, (int)len, flags);
-			#endif
-				return send_status;
+				return send(this->fd, buf, (int)len, flags);
 			}// class Socket Send()
 
 			int Recv(char *buf, size_t len, int flags = 0) {
-				int recv_status;
-			#if SSL_ENABLE
-				recv_status = SSL_read(this->ssl, buf, (int)len);
-			#else
-				recv_status = recv(this->fd, buf, (int)len, flags);
-			#endif
-				return recv_status;
+				return recv(this->fd, buf, (int)len, flags);
 			}// class Socket Recv()
 
 			shared_ptr<Socket> Accept() {
@@ -573,6 +562,20 @@ namespace xsystem {
 			#endif
 				client->address.host = inet_ntoa(client->address.addr.sin_addr);
 				client->address.port = ntohs(client->address.addr.sin_port);
+				return client;
+			}// class Socket Accpet()
+
+		#if SSL_ENABLE
+			int SSL_Send(const char *buf, size_t len) {
+				return SSL_write(this->ssl, buf, (int)len);
+			}// class Socket SSL_Send()
+
+			int SSL_Recv(char *buf, size_t len) {
+				return SSL_read(this->ssl, buf, (int)len);
+			}// class Socket SSL_Recv()
+
+			shared_ptr<Socket> SSL_Accept() {
+				shared_ptr<Socket> client = this->Accept();
 			#if SSL_ENABLE
 				client->ssl = SSL_new(SSL_CTX_new(SSLv23_server_method()));
 				SSL_set_fd(client->ssl, client->fd);
@@ -582,7 +585,9 @@ namespace xsystem {
 				}
 			#endif
 				return client;
-			}// class Socket Accpet()
+			}// class SSL_Socket Accpet()
+
+		#endif
 
 			int Close() {
 			#if SSL_ENABLE
@@ -679,6 +684,7 @@ namespace xsystem {
 				unsigned int port = 80;
 				map<string, string> headers;
 				shared_ptr<Socket> client;
+				int https = 0;
 
 			private:
 				int proxy = 0;
@@ -787,11 +793,63 @@ namespace xsystem {
 								;
 							break;
 					}
-
-					client->Send(http_packet.c_str(), http_packet.length(), 0);
-
+					
+					char c;// vital
+				#if SSL_ENABLE
+					if(this->https) client->SSL_Send(http_packet.c_str(), http_packet.length());
+					else client->Send(http_packet.c_str(), http_packet.length(), 0);
 					// first line
-					char c;
+
+					// (this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '));
+					while((this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '))) {
+						response->all += c;
+					}; response->all += ' ';// HTTP/1.1
+
+					while((this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '))) {
+						response->all += c;
+						response->status_code += c;
+					}; response->all += ' ';
+
+					while((this->https ? (client->SSL_Recv(&c, 1) && c != '\r') : (client->Recv(&c, 1, 0) && c != '\r'))) {
+						response->all += c;
+						response->status += c;
+					}
+
+					// others
+					int flag = 1; // 
+					while(flag) {
+						string first, second;
+						while(int len = (this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0)))) {
+							response->all += c;
+							if(c == '\n') {
+								(this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0)));
+								response->all += c;
+								if(c == '\r') {
+									(this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0)));
+									response->all += c;
+									if(c == '\n') {
+										flag = 0;
+										goto HTTP_CONTENT;
+									}
+								}
+							}// check if down to body
+							if(c != ':') {
+								first += c;
+							} else break;
+						}
+
+						(this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0)));// Space
+						response->all += c;
+						while((this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0))) && c != '\r') {
+							response->all += c;
+							second += c;
+						}
+
+						response->headers.insert(pair<string, string>(first, second));
+					}
+				#else
+					client->Send(http_packet.c_str(), http_packet.length(), 0);
+					// first line
 					while(client->Recv(&c, 1, 0) && c != ' ') {
 						response->all += c;
 					}; response->all += ' ';// HTTP/1.1
@@ -838,7 +896,8 @@ namespace xsystem {
 
 						response->headers.insert(pair<string, string>(first, second));
 					}
-
+				#endif
+					
 HTTP_CONTENT:
 
 					if(response->headers.count("Content-Length")) {
@@ -852,7 +911,11 @@ HTTP_CONTENT:
 
 					char buffer[1024] = { '\0' };
 					size_t total = 0;
+				#if SSL_ENABLE
+					while(int size = client->SSL_Recv(buffer, 1024)) {
+					#else
 					while(int size = client->Recv(buffer, 1024, 0)) {
+				#endif
 						response->all += buffer;
 						strncpy(response->data, buffer, size);
 						if(size > 1024) response->data[total] = '\0';
@@ -867,7 +930,11 @@ HTTP_CONTENT:
 			public:
 				Request(string base):base(base) {
 					if(this->base.length() > 7) {
-						if(this->base.at(4) == 's' || this->base.at(4) == 'S') port = 443;
+						if(this->base.at(4) == 's' || this->base.at(4) == 'S') {
+							this->https = 1;
+							this->port = 443;
+						}
+						
 
 						size_t index = 0;
 						while(this->base.at(index) != ':') index++;

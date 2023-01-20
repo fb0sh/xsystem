@@ -8,7 +8,7 @@ using std::endl;
 
 int main() {
 	HttpInit();
-	Request req("https://www.baidu.com");
+	Request req("http://192.168.0.103");
 	cout << req.domain << endl;
 	cout << req.port << endl;
 	cout << req.ip << endl;
