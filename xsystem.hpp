@@ -73,8 +73,6 @@ using std::vector;
 #include <memory>
 using std::shared_ptr;
 
-
-
 #include <stdint.h>
 
 namespace xsystem {
@@ -991,8 +989,11 @@ HTTP_CONTENT:
 				Request() {}
 
 				~Request() {}
+
 			};// namespace http class Request
+
 		};// namespace http
+
 	};// namespace net
 
 	namespace os {
@@ -1025,15 +1026,15 @@ HTTP_CONTENT:
 		#else
 			return mkdir(path.c_str(), 0755);
 		#endif
-		}
+		}// namespace os Mkdir()
 
 		int Rmdir(string path) {
 			return rmdir(path.c_str());
-		}
+		}// namespace os Rmdir()
 
 		int Remove(string path) {
 			return remove(path.c_str());
-		}
+		}// namespace os Remove()
 
 		int FileExist(string file_path) {
 			int flag = -1;
@@ -1043,7 +1044,7 @@ HTTP_CONTENT:
 				flag = 1;
 			}
 			return flag;
-		}
+		}// namespace os FileExist()
 
 		int DirExist(string dir_path) {
 			int flag = -1;
@@ -1059,7 +1060,7 @@ HTTP_CONTENT:
 			}
 		#endif
 			return flag;
-		}
+		}// namespace os DirExist()
 
 	#if _WIN32
 		void __get_all_from(string path, vector<string> &files) {
@@ -1073,7 +1074,7 @@ HTTP_CONTENT:
 				} while(_findnext(hFile, &fileinfo) == 0);
 				_findclose(hFile);
 			}
-		}
+		}// __get__all__from()
 	#endif
 
 		vector<string> ListDir(string path) {
@@ -1085,14 +1086,15 @@ HTTP_CONTENT:
 			struct dirent *dirp;
 			if((dp = opendir(path.c_str())) == NULL) throw "ERROR";
 			while((dirp = readdir(dp)) != NULL) {
-					dirs.push_back(dirp->d_name);
+				dirs.push_back(dirp->d_name);
 			}
 			closedir(dp);
 		#endif
 			return dirs;
 		}// namespace os ListDir()
 
-	};// namespace xsystem
+	};// namespace os
+
 };// namespace xsystem
 
 #endif
