@@ -44,6 +44,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #define SOCKET int
@@ -1017,7 +1020,11 @@ HTTP_CONTENT:
 		}// namespace os Chidr()
 
 		int Mkdir(string path) {
+		#if _WIN32
 			return mkdir(path.c_str());
+		#else
+			return mkdir(path.c_str(), 0755);
+		#endif
 		}
 
 		int Rmdir(string path) {
@@ -1054,6 +1061,7 @@ HTTP_CONTENT:
 			return flag;
 		}
 
+	#if _WIN32
 		void __get_all_from(string path, vector<string> &files) {
 			intptr_t hFile = 0;
 			struct _finddata_t fileinfo;
@@ -1066,10 +1074,21 @@ HTTP_CONTENT:
 				_findclose(hFile);
 			}
 		}
+	#endif
 
 		vector<string> ListDir(string path) {
 			vector<string> dirs;
+		#if _WIN32
 			__get_all_from(path, dirs);
+		#else 
+			DIR *dp;
+			struct dirent *dirp;
+			if((dp = opendir(path.c_str())) == NULL) throw "ERROR";
+			while((dirp = readdir(dp)) != NULL) {
+					dirs.push_back(dirp->d_name);
+			}
+			closedir(dp);
+		#endif
 			return dirs;
 		}// namespace os ListDir()
 
