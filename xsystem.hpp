@@ -13,6 +13,7 @@
 #define SSL_ENABLE 0
 #endif // !SSL_ENABLE
 
+#pragma once
 #ifndef __XSYSTEM__
 #define __XSYSTEM__
 #if SSL_ENABLE
@@ -28,6 +29,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <Winsock2.h>
 #pragma comment (lib, "ws2_32.lib") 
+#include <direct.h> // path
+#include <io.h>
+
 
 #if SSL_ENABLE
 #pragma comment(lib,"libssl.lib")
@@ -46,8 +50,6 @@
 
 #endif
 
-
-
 // c++
 #include <string>
 using std::string;
@@ -62,8 +64,12 @@ using std::endl;
 using std::map;
 using std::pair;
 
+#include <vector>
+using std::vector;
+
 #include <memory>
 using std::shared_ptr;
+
 
 
 #include <stdint.h>
@@ -612,7 +618,7 @@ namespace xsystem {
 			#else
 				return getsockopt(this->fd, level, optname, optval, (socklen_t *)optlen);
 			#endif
-		}// class Socket GetSockOpt
+			}// class Socket GetSockOpt
 
 			Socket(int protofamily, int type, int protocol) {
 				this->fd = socket(protofamily, type, protocol);
@@ -621,12 +627,12 @@ namespace xsystem {
 
 			Socket() {
 				this->fd = -1;
-	}
+			}
 
 			~Socket() {
 				this->Close();
 			}
-};// class Socket
+		};// class Socket
 
 		namespace http {
 
@@ -911,8 +917,8 @@ HTTP_CONTENT:
 							free(response->data);
 							response->data = (char *)malloc(sizeof(char) * size);
 							memset(response->data, '\0', size);
+						}
 					}
-				}
 
 					char buffer[1024] = { '\0' };
 					size_t total = 0;
@@ -976,15 +982,98 @@ HTTP_CONTENT:
 
 
 						}
+					}
 				}
-			}
 
 				Request() {}
 
 				~Request() {}
-		};// namespace http class Request
+			};// namespace http class Request
 		};// namespace http
 	};// namespace net
+
+	namespace os {
+		// for path
+	#if _WIN32
+		const string SYSTEM_PATH_DELIM = "\\\\";
+	#else
+		const string SYSTEM_PATH_DELIM = "/";
+	#endif
+		string GetEnv(string key) {
+			char *p = getenv(key.c_str());
+			if(p != NULL) return p;
+			else return "NO ENV";
+		}// namespace os GetEnv()
+
+		string GetCwd() {
+			char *p = NULL;
+			p = getcwd(NULL, 0);
+			if(p != NULL) return p;
+			else return "ERROR CWD";
+		}// namespace os GetCwd()
+
+		int Chdir(string path) {
+			return chdir(path.c_str());
+		}// namespace os Chidr()
+
+		int Mkdir(string path) {
+			return mkdir(path.c_str());
+		}
+
+		int Rmdir(string path) {
+			return rmdir(path.c_str());
+		}
+
+		int Remove(string path) {
+			return remove(path.c_str());
+		}
+
+		int FileExist(string file_path) {
+			int flag = -1;
+			FILE *f = fopen(file_path.c_str(), "r");
+			if(f != NULL) {
+				fclose(f);
+				flag = 1;
+			}
+			return flag;
+		}
+
+		int DirExist(string dir_path) {
+			int flag = -1;
+		#if _WIN32
+			struct _stat filestat;
+			if((_stat(dir_path.c_str(), &filestat) == 0) && (filestat.st_mode & _S_IFDIR)) {
+				flag = 1;
+			}
+		#else
+			struct  stat filestat;
+			if((stat(dir_path.c_str(), &filestat) == 0) && S_ISDIR(filestat.st_mode)) {
+				flag = 1;
+			}
+		#endif
+			return flag;
+		}
+
+		void __get_all_from(string path, vector<string> &files) {
+			intptr_t hFile = 0;
+			struct _finddata_t fileinfo;
+			string p;
+			if((hFile = _findfirst(p.assign(path).append("\\*").c_str(), &fileinfo)) != -1)//若查找成功，则进入
+			{
+				do {
+					files.push_back(fileinfo.name);
+				} while(_findnext(hFile, &fileinfo) == 0);
+				_findclose(hFile);
+			}
+		}
+
+		vector<string> ListDir(string path) {
+			vector<string> dirs;
+			__get_all_from(path, dirs);
+			return dirs;
+		}// namespace os ListDir()
+
+	};// namespace xsystem
 };// namespace xsystem
 
 #endif
