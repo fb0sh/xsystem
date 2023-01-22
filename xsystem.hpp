@@ -169,8 +169,8 @@ namespace xsystem {
 			}// class Base64 Decode()
 
 		public:
-			Base64();
-			~Base64();
+			Base64() {}
+			~Base64() {}
 
 		}; // class Base64
 
@@ -439,8 +439,8 @@ namespace xsystem {
 				}// class Md5 FileEncode()
 
 			public:
-				Md5();
-				~Md5();
+				Md5() {}
+				~Md5() {}
 
 			};// class Md5
 
@@ -623,7 +623,7 @@ namespace xsystem {
 			#endif
 			}// class Socket GetSockOpt
 
-			Socket(int protofamily, int type, int protocol) {
+			Socket(int protofamily, int type, int protocol = 0) {
 				this->fd = socket(protofamily, type, protocol);
 				this->address.addr.sin_family = protofamily;
 			}
@@ -815,23 +815,16 @@ namespace xsystem {
 					// first line
 
 					// (this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '));
-					while((this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '))) {
-						response->all += c;
-					}; response->all += ' ';// HTTP/1.1
+					while((this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '))) response->all += c;
 
-					while((this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '))) {
-						response->all += c;
-						response->status_code += c;
-					}; response->all += ' ';
+					while((this->https ? (client->SSL_Recv(&c, 1) && c != ' ') : (client->Recv(&c, 1, 0) && c != ' '))) response->status_code += c;
 
-					while((this->https ? (client->SSL_Recv(&c, 1) && c != '\r') : (client->Recv(&c, 1, 0) && c != '\r'))) {
-						response->all += c;
-						response->status += c;
-					}
+					while((this->https ? (client->SSL_Recv(&c, 1) && c != '\r') : (client->Recv(&c, 1, 0) && c != '\r'))) response->status += c;
+
+					this->all += " " + response->status_code + " " + response->status + "\r";
 
 					// others
-					int flag = 1; // 
-					while(flag) {
+					for(;;) {
 						string first, second;
 						while(int len = (this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0)))) {
 							response->all += c;
@@ -842,7 +835,6 @@ namespace xsystem {
 									(this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0)));
 									response->all += c;
 									if(c == '\n') {
-										flag = 0;
 										goto HTTP_CONTENT;
 									}
 								}
@@ -853,45 +845,32 @@ namespace xsystem {
 						}
 
 						(this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0)));// Space
-						response->all += c;
-						while((this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0))) && c != '\r') {
-							response->all += c;
-							second += c;
-						}
 
-						response->headers.insert(pair<string, string>(first, second));
+						while((this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0))) && c != '\r') second += c;
+
+						response->all += first + ": " + second;
+						response->headers.insert({ first, second });
 					}
 				#else
 					client->Send(http_packet.c_str(), http_packet.length(), 0);
 					// first line
-					while(client->Recv(&c, 1, 0) && c != ' ') {
-						response->all += c;
-					}; response->all += ' ';// HTTP/1.1
-
-					while(client->Recv(&c, 1, 0) && c != ' ') {
-						response->all += c;
-						response->status_code += c;
-					}; response->all += ' ';
-
-					while(client->Recv(&c, 1, 0) && c != '\r') {
-						response->all += c;
-						response->status += c;
-					}
+					while(client->Recv(&c, 1, 0) && c != ' ') response->all += c;
+					while(client->Recv(&c, 1, 0) && c != ' ') response->status_code += c;
+					while(client->Recv(&c, 1, 0) && c != '\r') response->status += c;
+					response->all += " " + response->status_code + " " + response->status + "\r";
 
 					// others
-					int flag = 1; // 
-					while(flag) {
+					for(;;) {
 						string first, second;
-						while(int len = client->Recv(&c, 1, 0)) {
+						while(client->Recv(&c, 1)) {
 							response->all += c;
 							if(c == '\n') {
-								client->Recv(&c, 1, 0);
+								client->Recv(&c, 1);
 								response->all += c;
 								if(c == '\r') {
-									client->Recv(&c, 1, 0);
+									client->Recv(&c, 1);
 									response->all += c;
 									if(c == '\n') {
-										flag = 0;
 										goto HTTP_CONTENT;
 									}
 								}
@@ -899,17 +878,15 @@ namespace xsystem {
 							if(c != ':') {
 								first += c;
 							} else break;
-						}
+				}
 
 						client->Recv(&c, 1, 0);// Space
-						response->all += c;
-						while(client->Recv(&c, 1, 0) && c != '\r') {
-							response->all += c;
-							second += c;
-						}
 
-						response->headers.insert(pair<string, string>(first, second));
-					}
+						while(client->Recv(&c, 1, 0) && c != '\r') second += c;
+
+						response->all += first + ": " + second;
+						response->headers.insert({ first, second });
+			}
 				#endif
 
 HTTP_CONTENT:
@@ -955,7 +932,7 @@ HTTP_CONTENT:
 					response->text = string(response->data);
 
 					return response;
-				}// class Request FuckHandleHttpRequest()
+						}// class Request FuckHandleHttpRequest()
 
 			public:
 				Request(string base):base(base) {
@@ -992,7 +969,7 @@ HTTP_CONTENT:
 
 				~Request() {}
 
-			};// namespace http class Request
+					};// namespace http class Request
 
 		};// namespace http
 
@@ -1065,7 +1042,7 @@ HTTP_CONTENT:
 		}// namespace os DirExist()
 
 		string JoinPath(string base, vector<string> other) {
-			string path=base;
+			string path = base;
 			for(string temp : other) {
 				path += SYSTEM_PATH_DELIM + temp;
 			}
