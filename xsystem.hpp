@@ -1037,7 +1037,7 @@ HTTP_CONTENT:
 		}// namespace os Remove()
 
 		int FileExist(string file_path) {
-			int flag = -1;
+			int flag = 0;
 			FILE *f = fopen(file_path.c_str(), "r");
 			if(f != NULL) {
 				fclose(f);
@@ -1047,7 +1047,7 @@ HTTP_CONTENT:
 		}// namespace os FileExist()
 
 		int DirExist(string dir_path) {
-			int flag = -1;
+			int flag = 0;
 		#if _WIN32
 			struct _stat filestat;
 			if((_stat(dir_path.c_str(), &filestat) == 0) && (filestat.st_mode & _S_IFDIR)) {
