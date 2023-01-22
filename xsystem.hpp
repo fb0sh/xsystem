@@ -1062,6 +1062,13 @@ HTTP_CONTENT:
 			return flag;
 		}// namespace os DirExist()
 
+		string JoinPath(string base, vector<string> other) {
+			string path=base;
+			for(string temp : other) {
+				path += SYSTEM_PATH_DELIM + temp;
+			}
+			return path;
+		}
 	#if _WIN32
 		void __get_all_from(string path, vector<string> &files) {
 			intptr_t hFile = 0;
