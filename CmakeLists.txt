@@ -20,6 +20,7 @@ add_executable(testhttpserver "tests/testhttpserver.cpp" )
 add_executable(testcrypt "tests/testcrypt.cpp" )
 add_executable(testhttpgetjpg "tests/testhttpgetjpg.cpp" )
 add_executable(testos "tests/testos.cpp" )
+add_executable(testwhen "tests/testwhen.cpp" )
 
 
 

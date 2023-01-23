@@ -75,6 +75,7 @@ using std::vector;
 #include <memory>
 using std::shared_ptr;
 
+#include <time.h>
 #include <stdint.h>
 
 namespace xsystem {
@@ -848,7 +849,7 @@ namespace xsystem {
 
 						while((this->https ? (client->SSL_Recv(&c, 1)) : (client->Recv(&c, 1, 0))) && c != '\r') second += c;
 
-						response->all += first + ": " + second;
+						response->all += first + ": " + second + "\r";
 						response->headers.insert({ first, second });
 					}
 				#else
@@ -878,15 +879,15 @@ namespace xsystem {
 							if(c != ':') {
 								first += c;
 							} else break;
-				}
+						}
 
 						client->Recv(&c, 1, 0);// Space
 
 						while(client->Recv(&c, 1, 0) && c != '\r') second += c;
 
-						response->all += first + ": " + second;
+						response->all += first + ": " + second + "\r";
 						response->headers.insert({ first, second });
-			}
+					}
 				#endif
 
 HTTP_CONTENT:
@@ -932,7 +933,7 @@ HTTP_CONTENT:
 					response->text = string(response->data);
 
 					return response;
-						}// class Request FuckHandleHttpRequest()
+				}// class Request FuckHandleHttpRequest()
 
 			public:
 				Request(string base):base(base) {
@@ -969,7 +970,7 @@ HTTP_CONTENT:
 
 				~Request() {}
 
-					};// namespace http class Request
+			};// namespace http class Request
 
 		};// namespace http
 
@@ -1080,6 +1081,21 @@ HTTP_CONTENT:
 		}// namespace os ListDir()
 
 	};// namespace os
+
+	namespace when {
+		string gmt_time() {
+			time_t now = time(0);
+			tm *gmt = gmtime(&now);
+			const char *fmt = "%a, %d %b %Y %H:%M:%S GMT";
+			char tstr[30];
+			strftime(tstr, sizeof(tstr), fmt, gmt);
+			return tstr;
+		}// namespace time gmt_time()
+	
+	
+	};// namespace time
+
+
 
 };// namespace xsystem
 
