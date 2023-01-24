@@ -46,7 +46,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <arpa/inet.h>
@@ -77,6 +76,7 @@ using std::shared_ptr;
 
 #include <time.h>
 #include <stdint.h>
+#include <sys/stat.h>
 
 namespace xsystem {
 
@@ -1108,7 +1108,18 @@ HTTP_CONTENT:
 
 	};// namespace time
 
+	namespace file {
+		pair<size_t, char *> ReadFile(const char *path) {
+			struct stat statbuf;
+			stat(path, &statbuf);
+			size_t file_size = statbuf.st_size;
 
+			char *file_data = (char *)malloc(sizeof(char) * file_size);
+
+			return { file_size, file_data };
+		}
+
+	};// namespace file
 
 };// namespace xsystem
 
