@@ -522,6 +522,7 @@ namespace xsystem {
 			}// class Socket Exit()
 
 			int Bind(string host, unsigned int port) {
+				// check your Init()
 				// try catch exception
 				this->address.host = host;
 				this->address.port = port;
@@ -1117,14 +1118,11 @@ HTTP_CONTENT:
 	};// namespace time
 
 	namespace file {
-		pair<size_t, char *> ReadFile(const char *path) {
+		size_t GetFileSize(const char *path) {
+			if(!os::FileExist(path)) return 0;
 			struct stat statbuf;
 			stat(path, &statbuf);
-			size_t file_size = statbuf.st_size;
-
-			char *file_data = (char *)malloc(sizeof(char) * file_size);
-
-			return { file_size, file_data };
+			return  statbuf.st_size;
 		}
 
 	};// namespace file
@@ -1188,6 +1186,9 @@ HTTP_CONTENT:
 						this->f.unlock();
 					}
 				}
+			}
+			void setDebug(int o) {
+				this->debug_ok = o;
 			}
 		};
 
