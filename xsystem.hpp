@@ -1124,6 +1124,17 @@ HTTP_CONTENT:
 			stat(path, &statbuf);
 			return  statbuf.st_size;
 		}
+		string GetFileLastModified(const char *path) {
+			if(!os::FileExist(path)) return "";
+			struct stat statbuf;
+			stat(path, &statbuf);
+			time_t m = statbuf.st_mtime;
+			tm *gmt = gmtime(&m);
+			const char *fmt = "%a, %d %b %Y %H:%M:%S GMT";
+			char tstr[30];
+			strftime(tstr, sizeof(tstr), fmt, gmt);
+			return tstr;
+		}
 
 	};// namespace file
 
