@@ -1149,7 +1149,11 @@ HTTP_CONTENT:
 			void BASE(string status, string text) {
 				time_t now = time(&now);
 				struct tm ti;
+				#if _WIN32
 				localtime_s(&ti, &now);
+				#else
+				localtime_r(&now, &ti);
+				#endif
 				std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
 				auto tmp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
 				std::time_t timestamp = tmp.count();
